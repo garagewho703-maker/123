@@ -1,0 +1,90 @@
+{
+  "entities": {
+    "ConsentForm": {
+      "title": "ConsentForm",
+      "description": "PPF 작업 동의서 문서",
+      "type": "object",
+      "properties": {
+        "customerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "고객명"
+        },
+        "customerPhone": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "고객 연락처"
+        },
+        "vehicleModel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "차량 모델"
+        },
+        "licensePlate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30,
+          "description": "차량 번호"
+        },
+        "workScope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "시공 부위 및 필름"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "특이사항"
+        },
+        "termsContent": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10000,
+          "description": "동의서 약관 내용"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "agreed"],
+          "description": "동의 상태"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "작성자 UID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "생성 일시"
+        },
+        "agreedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "고객 동의 일시"
+        }
+      },
+      "required": [
+        "customerName",
+        "vehicleModel",
+        "licensePlate",
+        "workScope",
+        "termsContent",
+        "status",
+        "ownerUid",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/consents/{consentId}": {
+      "schema": {
+        "$ref": "#/entities/ConsentForm"
+      },
+      "description": "PPF 작업 동의서 컬렉션"
+    }
+  }
+}

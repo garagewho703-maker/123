@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == 'garagewho703@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function isValidConsent(data) {
+      return data.keys().hasAll([
+          'customerName',
+          'vehicleModel',
+          'licensePlate',
+          'workScope',
+          'termsContent',
+          'status',
+          'ownerUid',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'customerName',
+          'customerPhone',
+          'vehicleModel',
+          'licensePlate',
+          'workScope',
+          'notes',
+          'termsContent',
+          'status',
+          'ownerUid',
+          'createdAt',
+          'agreedAt'
+        ])
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 100
+        && (!('customerPhone' in data) || (data.customerPhone is string && data.customerPhone.size() <= 30))
+        && data.vehicleModel is string && data.vehicleModel.size() >= 1 && data.vehicleModel.size() <= 100
+        && data.licensePlate is string && data.licensePlate.size() >= 1 && data.licensePlate.size() <= 30
+        && data.workScope is string && data.workScope.size() >= 1 && data.workScope.size() <= 200
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000))
+        && data.termsContent is string && data.termsContent.size() >= 10 && data.termsContent.size() <= 10000
+        && data.status in ['pending', 'agreed']
+        && data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128
+        && data.createdAt is timestamp
+        && (!('agreedAt' in data) || data.agreedAt == null || data.agreedAt is timestamp);
+    }
+
+    match /consents/{consentId} {
+      // 고객은 개별 링크(consentId)로만 조회 가능, 관리자는 전체 조회 가능
+      allow get: if isValidId(consentId);
+      allow list: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+
+      // 관리자만 새 동의서 생성 및 삭제 가능
+      allow create: if isSignedIn()
+        && isValidId(consentId)
+        && isValidConsent(incoming())
+        && incoming().ownerUid == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && (isAdmin() || request.auth.token.email_verified == true);
+
+      // 고객은 대기중(pending) 상태에서 동의(agreed)로 1회만 변경 가능, 관리자는 수정 가능
+      allow update: if isValidId(consentId)
+        && isValidConsent(incoming())
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && (
+          isAdmin()
+          || (
+            existing().status == 'pending'
+            && incoming().status == 'agreed'
+            && incoming().agreedAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'agreedAt'])
+          )
+        );
+
+      allow delete: if isValidId(consentId) && (isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid));
+    }
+  }
+}

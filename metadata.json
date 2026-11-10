@@ -1,0 +1,6 @@
+{
+  "name": "PPF 작업 동의서 관리",
+  "description": "PPF 시공 작업 동의서 생성, 고객 링크 동의 및 전체 동의서 관리 시스템",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
